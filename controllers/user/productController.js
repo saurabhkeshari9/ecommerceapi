@@ -1,5 +1,6 @@
 const Product = require("../../models/product.model");
 const Category = require("../../models/category.model");
+const Report = require("../../models/report.model");
 const mongoose = require("mongoose");
 
 // Get Product Feed
@@ -206,6 +207,53 @@ exports.getCategoriesWithProducts = async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching categories with products:", err.message);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error",
+    });
+  }
+};
+
+
+
+// Report a Product
+exports.reportProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { reason } = req.body;
+
+    // Check if the product exists
+    const product = await Product.findOne({ _id: productId, isDeleted: false });
+    if (!product) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Product not found",
+      });
+    }
+
+    // Check if the user has already reported this product
+    const existingReport = await Report.findOne({ product: productId, user: req.userAuth._id });
+    if (existingReport) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "You have already reported this product",
+      });
+    }
+
+    // Create a new report
+    const report = await Report.create({
+      product: productId,
+      user: req.userAuth._id,
+      reason,
+    });
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: "Product reported successfully",
+      data: report,
+    });
+  } catch (err) {
+    console.error("Error reporting product:", err.message);
     return res.status(500).json({
       statusCode: 500,
       message: "Internal server error",
