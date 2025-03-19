@@ -1,5 +1,5 @@
 const Order = require("../../models/order.model");
-//const User = require("../../models/user.model");
+const User = require("../../models/user.model");
 //const Product = require("../../models/product.model");
 
 // Get All Orders
@@ -204,7 +204,7 @@ exports.updateOrderStatus = async (req, res) => {
         message: "Order not found",
       });
     }
-
+   
     return res.status(200).json({
       statusCode: 200,
       message: "Order status updated successfully",

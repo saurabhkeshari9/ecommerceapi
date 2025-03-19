@@ -3,6 +3,7 @@ const User = require("../../models/user.model");
 const Vendor = require('../../models/vendor.model');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
+const {sendSMS} = require("../../helper/services");
 require("dotenv").config();
 
 // Admin Login
@@ -89,7 +90,7 @@ exports.createVendor = async (req, res) => {
   try {
     const { name, email, password, mobile, address, approvedCategories } = req.body;
 
-    const existingVendor = await Vendor.findOne({ email, isDeleted: false });
+    const existingVendor = await Vendor.findOne({ $or: [{ email }, { mobile }], isDeleted: false });
     if (existingVendor) {
       return res.status(400).json({ statusCode: 400, message: "Vendor already exists" });
     }
@@ -105,7 +106,7 @@ exports.createVendor = async (req, res) => {
     });
     const vendorData = newVendor.toObject();
     delete vendorData.password;
-
+    await sendSMS(newVendor.mobile, "Your vendor account has been created successfully");
     return res.status(200).json({ statusCode: 200, message: "Vendor created successfully", data: vendorData });
   } catch (err) {
     return res.status(500).json({ statusCode: 500, message: err.message });
@@ -192,6 +193,7 @@ exports.updateVendor = async (req, res) => {
     if (!vendor) {
       return res.status(400).json({ statusCode: 400, message: 'Vendor not found' });
     }
+    await sendSMS(vendor.mobile, "Your vendor account has been updated successfully");
 
     return res.status(200).json({ statusCode: 200, message: 'Vendor updated successfully', data: vendor });
   } catch (err) {
@@ -214,7 +216,7 @@ exports.deleteVendor = async (req, res) => {
     if (!vendor) {
       return res.status(400).json({ statusCode: 400, message: 'Vendor not found' });
     }
-
+    await sendSMS(vendor.mobile, "Your vendor account has been deleted.");
     return res.status(200).json({ statusCode: 200, message: 'Vendor deleted successfully', data: vendor });
   } catch (err) {
     console.error("Error deleting vendor:", err.message);

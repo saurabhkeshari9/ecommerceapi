@@ -1,6 +1,8 @@
 const User = require('../../models/user.model');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { sendSMS } = require('../../helper/services');
+const crypto = require('crypto');
+//const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 // Register User
@@ -12,6 +14,10 @@ exports.register = async (req, res) => {
       $or: [{ email }, { mobile }], 
       isDeleted: false 
     });
+
+    const otp = crypto.randomInt(100000, 999999).toString();//for otp generation
+    const otpExpires = Date.now() + 10 * 60 * 1000;
+
 
     if (existingUser) {
       const message = existingUser.email === email ? 'Email already exists' : 'Mobile number already exists';
@@ -25,15 +31,16 @@ exports.register = async (req, res) => {
       email, 
       mobile, 
       password: hashedPassword, 
-      gender
+      gender,
+      otp, 
+      otpExpires
     });
-
-    const { password: _, ...userData } = newUser.toObject();
+   
+    await sendSMS(newUser.mobile, `Your OTP for registration is ${otp}`);
 
     return res.status(200).json({ 
       statusCode: 200, 
-      message: 'User registered successfully', 
-      data: userData 
+      message: 'please verify otp for registering successfully', 
     });
 
   } catch (err) {
@@ -45,13 +52,19 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, mobile, password } = req.body;
-    const user = await User.findOne({ $or: [{ email }, { mobile }], isDeleted: false }).select("name email password ").lean();
+    const user = await User.findOne({ $or: [{ email }, { mobile }], isDeleted: false }).select("name email mobile password");
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ statusCode: 400, error: "Invalid credentials or User is deleted" });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    delete user.password;
-    return res.status(200).json({ statusCode: 200, message: 'User login successfully', data: { ...user, token } });
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 mins
+    user.otpExpires = otpExpires;
+    await user.save();
+    await sendSMS(user.mobile, `Your OTP for login is ${otp}`);
+    
+    return res.status(200).json({ statusCode: 200, message: 'please verify otp for login successfully' });
   } catch (err) {
     return res.status(500).json({ statusCode: 500, message: err.message });
   }

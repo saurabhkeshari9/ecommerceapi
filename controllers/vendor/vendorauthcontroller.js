@@ -2,15 +2,16 @@ const Vendor = require('../../models/vendor.model');
 const Product = require('../../models/product.model');
 const Category = require('../../models/category.model');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { sendSMS } = require('../../helper/services');
 require('dotenv').config();
 
 // Vendor Login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, mobile, password } = req.body;
 
-    const vendor = await Vendor.findOne({ email, isDeleted: false }).select("name email password").lean();
+    const vendor = await Vendor.findOne({ $or: [{ email }, { mobile }], isDeleted: false }).select("name email password");
     if (!vendor) {
       return res.status(400).json({ statusCode: 400, message: "Vendor is not active or does not exist" });
     }
@@ -19,16 +20,21 @@ exports.login = async (req, res) => {
       return res.status(400).json({ statusCode: 400, message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: vendor._id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
+     // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString(); // Generate 6-digit OTP
+    const otpExpires = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
 
-    delete vendor.password;
+    // Update vendor with OTP and expiration
+    vendor.otp = otp;
+    vendor.otpExpires = otpExpires;
+    await vendor.save();
+
+    // Send OTP via Twilio
+    await sendSMS(vendor.mobile, `Your OTP for login is ${otp}`);
 
     return res.status(200).json({
       statusCode: 200,
-      message: "Vendor login successful",
-      data: { ...vendor, token },
+      message: "please verify otp for login successfully",
     });
   } catch (err) {
     return res.status(500).json({ statusCode: 500, message: err.message });
