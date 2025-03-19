@@ -1,5 +1,7 @@
 const express = require("express");
 const { getProductFeed, getProductDetails, getCategoriesWithProducts } = require("../../controllers/user/productController");
+const validateParams = require("../../middleware/validateparams");
+const { productIdSchema } = require("../../validation/user/userproduct");
 
 const router = express.Router();
 
@@ -7,7 +9,7 @@ const router = express.Router();
 router.get("/feed", getProductFeed);
 
 // Get product details
-router.get("/productdetail/:productId", getProductDetails);
+router.get("/productdetail/:productId", validateParams(productIdSchema), getProductDetails);
 
 // Get category by product
 router.get("/getcategorybyproduct", getCategoriesWithProducts);

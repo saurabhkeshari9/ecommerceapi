@@ -5,11 +5,8 @@ const addItemSchema = Joi.object({
   quantity: Joi.number().min(1).required()
 });
 
-const productIdSchema = Joi.object({
-  productId: Joi.string().required()
-});
+
 
 module.exports = {
   addItemSchema,
-  productIdSchema
 };

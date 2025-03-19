@@ -1,7 +1,7 @@
 const express = require('express');
 const { login,getProfile,addProduct, getAllProducts, updateProduct, deleteProduct } = require('../../controllers/vendor/vendorauthcontroller');
 const isVendor = require('../../middleware/isVendor');
-const validate = require('../../middleware/validate');
+const validate = require('../../middleware/validatebody');
 const { vendorLoginSchema,productSchema, productIdSchema } = require('../../validation/vendor/vendor');
 const upload = require('../../middleware/multer');
 

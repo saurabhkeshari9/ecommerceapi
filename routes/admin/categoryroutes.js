@@ -1,14 +1,15 @@
 const express = require('express');
 const { createCategory, getAllCategories, updateCategory, deleteCategory } = require('../../controllers/admin/categorycontroller');
 const isAdmin = require('../../middleware/isAdmin');
-const validate = require('../../middleware/validate');
+const validatebody = require('../../middleware/validatebody');
+const validateParams = require('../../middleware/validateparams');
 const { categorySchema, categoryIdSchema } = require('../../validation/admin/category');
 
 const router = express.Router();
 
-router.post('/create', isAdmin, validate(categorySchema), createCategory);
+router.post('/create', isAdmin, validatebody(categorySchema), createCategory);
 router.get('/all', isAdmin, getAllCategories);
-router.put('/update/:categoryId', isAdmin, validate(categoryIdSchema,'params'), updateCategory);
-router.delete('/delete/:categoryId', isAdmin, validate(categoryIdSchema,'params'), deleteCategory);
+router.put('/update/:categoryId', isAdmin, validateParams(categoryIdSchema), updateCategory);
+router.delete('/delete/:categoryId', isAdmin, validateParams(categoryIdSchema), deleteCategory);
 
 module.exports = router;

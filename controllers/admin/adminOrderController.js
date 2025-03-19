@@ -177,3 +177,77 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
+// Update Order Status
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    if (!["pending", "completed", "cancelled"].includes(status)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Invalid status value",
+      });
+    }
+
+    // Find and update the order status
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: orderId },
+      { status },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Order not found",
+      });
+    }
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: "Order status updated successfully",
+      data: updatedOrder,
+    });
+  } catch (err) {
+    console.error("Error updating order status:", err.message);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Delete Order
+exports.deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Find and soft-delete the order
+    const deletedOrder = await Order.findOneAndUpdate(
+      { _id: orderId, isDeleted: false }, // Check for non-deleted order
+      { isDeleted: true },
+      { new: true }
+    );
+
+    if (!deletedOrder) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Order not found",
+      });
+    }
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: "Order deleted successfully",
+      data: deletedOrder,
+    });
+  } catch (err) {
+    console.error("Error deleting order:", err.message);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error",
+    });
+  }
+};
